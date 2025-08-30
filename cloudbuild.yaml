@@ -1,0 +1,44 @@
+steps:
+  # Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'build',
+      '-t', 'gcr.io/$PROJECT_ID/wallet-api:$BUILD_ID',
+      '-t', 'gcr.io/$PROJECT_ID/wallet-api:latest',
+      '.'
+    ]
+
+  # Push the container image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/wallet-api:$BUILD_ID']
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/wallet-api:latest']
+
+  # Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args: [
+      'run', 'deploy', 'wallet-api',
+      '--image', 'gcr.io/$PROJECT_ID/wallet-api:latest',
+      '--region', '$_REGION',
+      '--platform', 'managed',
+      '--allow-unauthenticated',
+      '--port', '8080',
+      '--memory', '2Gi',
+      '--cpu', '2',
+      '--min-instances', '1',
+      '--max-instances', '10',
+      '--set-env-vars', 'DATABASE_NAME=wallet_db,COLLECTION_NAME=wallets,API_HOST=0.0.0.0,API_PORT=8080,DEBUG=False,ALLOWED_ORIGINS=*',
+      '--update-secrets', 'MONGODB_URL=wallet-api-secrets:latest'
+    ]
+
+substitutions:
+  _REGION: 'asia-southeast1'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+images:
+  - 'gcr.io/$PROJECT_ID/wallet-api:$BUILD_ID'
+  - 'gcr.io/$PROJECT_ID/wallet-api:latest'

@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 
 from .config import settings
 from .database import connect_to_mongo, close_mongo_connection
-from .routers import wallets_router, stats_router
+from .router import wallets_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -32,7 +32,6 @@ app.add_middleware(
 
 # Include routers
 app.include_router(wallets_router)
-app.include_router(stats_router)
 
 @app.get("/")
 async def root():
@@ -49,8 +48,7 @@ async def root():
             "PUT /wallets/{wallet_id}": "Update wallet",
             "DELETE /wallets/{wallet_id}": "Delete wallet",
             "GET /wallets/search/by-address": "Search wallets by address",
-            "POST /wallets/bulk": "Bulk create wallets",
-            "GET /stats": "Get wallet statistics"
+            "POST /wallets/bulk": "Bulk create wallets"
         }
     }
 
