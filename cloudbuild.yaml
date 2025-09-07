@@ -3,24 +3,24 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: [
       'build',
-      '-t', 'gcr.io/$PROJECT_ID/wallet-api:$BUILD_ID',
-      '-t', 'gcr.io/$PROJECT_ID/wallet-api:latest',
+      '-t', 'gcr.io/$PROJECT_ID/wallet-api-bigquery:$BUILD_ID',
+      '-t', 'gcr.io/$PROJECT_ID/wallet-api-bigquery:latest',
       '.'
     ]
 
   # Push the container image to Container Registry
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/wallet-api:$BUILD_ID']
+    args: ['push', 'gcr.io/$PROJECT_ID/wallet-api-bigquery:$BUILD_ID']
 
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/wallet-api:latest']
+    args: ['push', 'gcr.io/$PROJECT_ID/wallet-api-bigquery:latest']
 
   # Deploy to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args: [
-      'run', 'deploy', 'wallet-api',
-      '--image', 'gcr.io/$PROJECT_ID/wallet-api:latest',
+      'run', 'deploy', 'wallet-api-bigquery',
+      '--image', 'gcr.io/$PROJECT_ID/wallet-api-bigquery:latest',
       '--region', '$_REGION',
       '--platform', 'managed',
       '--allow-unauthenticated',
@@ -29,16 +29,17 @@ steps:
       '--cpu', '2',
       '--min-instances', '1',
       '--max-instances', '10',
-      '--set-env-vars', 'DATABASE_NAME=wallet_db,COLLECTION_NAME=wallets,API_HOST=0.0.0.0,API_PORT=8080,DEBUG=False,ALLOWED_ORIGINS=*',
-      '--update-secrets', 'MONGODB_URL=wallet-api-secrets:latest'
+      '--set-env-vars', 'GOOGLE_CLOUD_PROJECT=$PROJECT_ID,BIGQUERY_DATASET=wallet_db,BIGQUERY_TABLE=wallets,API_HOST=0.0.0.0,API_PORT=8080,DEBUG=False,ALLOWED_ORIGINS=*',
+      '--set-env-vars', 'GOOGLE_APPLICATION_CREDENTIALS=/tmp/keys/key.json',
+      '--service-account', 'wallet-api-service@$PROJECT_ID.iam.gserviceaccount.com'
     ]
 
 substitutions:
-  _REGION: 'asia-southeast1'
+  _REGION: 'us-central1'
 
 options:
   logging: CLOUD_LOGGING_ONLY
 
 images:
-  - 'gcr.io/$PROJECT_ID/wallet-api:$BUILD_ID'
-  - 'gcr.io/$PROJECT_ID/wallet-api:latest'
+  - 'gcr.io/$PROJECT_ID/wallet-api-bigquery:$BUILD_ID'
+  - 'gcr.io/$PROJECT_ID/wallet-api-bigquery:latest'

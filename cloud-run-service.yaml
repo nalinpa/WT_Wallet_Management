@@ -29,9 +29,9 @@ spec:
               name: wallet-api-secrets
               key: MONGODB_URL
         - name: DATABASE_NAME
-          value: "wallet_db"
+          value: "crypto_tracker"
         - name: COLLECTION_NAME
-          value: "wallets"
+          value: "smart_wallets"
         - name: API_HOST
           value: "0.0.0.0"
         - name: API_PORT

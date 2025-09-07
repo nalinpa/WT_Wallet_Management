@@ -1,0 +1,69 @@
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Address</th>
+                <th>Score</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for wallet in wallets %}
+            <tr>
+                <td>
+                    <code class="wallet-address">{{ wallet.address[:10] }}...{{ wallet.address[-8:] }}</code>
+                </td>
+                <td>
+                    <span class="badge score-badge {% if wallet.score >= 8 %}score-high{% elif wallet.score >= 5 %}score-medium{% else %}score-low{% endif %}">
+                        {{ wallet.score }}
+                    </span>
+                </td>
+                <td>
+                    {% if wallet.is_active %}
+                        <i class="bi bi-check-circle-fill status-active"></i> Active
+                    {% else %}
+                        <i class="bi bi-x-circle-fill status-inactive"></i> Inactive
+                    {% endif %}
+                </td>
+                <td>{{ wallet.created_at.strftime('%Y-%m-%d') }}</td>
+                <td class="table-actions">
+                    <div class="btn-group" role="group">
+                        <a href="/wallets/{{ wallet.id }}/edit" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteWallet('{{ wallet.id }}')">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if total_pages > 1 %}
+<nav aria-label="Wallet pagination">
+    <ul class="pagination">
+        {% if has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="#" hx-get="/wallets?offset={{ (current_page - 2) * limit }}&limit={{ limit }}" hx-target="#wallets-list">Previous</a>
+            </li>
+        {% endif %}
+        
+        {% for page in range(1, total_pages + 1) %}
+            <li class="page-item {% if page == current_page %}active{% endif %}">
+                <a class="page-link" href="#" hx-get="/wallets?offset={{ (page - 1) * limit }}&limit={{ limit }}" hx-target="#wallets-list">{{ page }}</a>
+            </li>
+        {% endfor %}
+        
+        {% if has_next %}
+            <li class="page-item">
+                <a class="page-link" href="#" hx-get="/wallets?offset={{ current_page * limit }}&limit={{ limit }}" hx-target="#wallets-list">Next</a>
+            </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}

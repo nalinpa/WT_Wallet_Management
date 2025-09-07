@@ -1,0 +1,23 @@
+<div class="card wallet-card">
+    <div class="card-body">
+        <h5 class="card-title">Wallet Found</h5>
+        <p class="card-text">
+            <strong>Address:</strong> <code class="wallet-address">{{ wallet.address }}</code><br>
+            <strong>Score:</strong> 
+            <span class="badge score-badge {% if wallet.score >= 8 %}score-high{% elif wallet.score >= 5 %}score-medium{% else %}score-low{% endif %}">
+                {{ wallet.score }}
+            </span><br>
+            <strong>Status:</strong>
+            {% if wallet.is_active %}
+                <i class="bi bi-check-circle-fill status-active"></i> Active
+            {% else %}
+                <i class="bi bi-x-circle-fill status-inactive"></i> Inactive
+            {% endif %}<br>
+            <strong>Created:</strong> {{ wallet.created_at.strftime('%Y-%m-%d') if wallet.created_at else 'N/A' }}
+        </p>
+        <div class="btn-group" role="group">
+            <a href="/wallets/{{ wallet.id }}/edit" class="btn btn-sm btn-primary">Edit</a>
+            <button class="btn btn-sm btn-outline-danger" onclick="deleteWallet('{{ wallet.id }}')">Delete</button>
+        </div>
+    </div>
+</div>

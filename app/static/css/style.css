@@ -1,0 +1,154 @@
+/* Custom styles for Wallet Manager */
+
+.wallet-card {
+    transition: transform 0.2s;
+}
+
+.wallet-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.score-badge {
+    font-size: 1.1em;
+    padding: 0.5rem;
+}
+
+.score-high {
+    background-color: #28a745;
+}
+
+.score-medium {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.score-low {
+    background-color: #dc3545;
+}
+
+.wallet-address {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.9em;
+    word-break: break-all;
+    background-color: #f8f9fa;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    border: 1px solid #dee2e6;
+}
+
+.stats-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+}
+
+.stats-card.total {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.stats-card.active {
+    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+}
+
+.stats-card.inactive {
+    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+}
+
+.stats-card.average {
+    background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+    color: #333;
+}
+
+.loading-spinner {
+    display: none;
+}
+
+.htmx-request .loading-spinner {
+    display: inline-block;
+}
+
+.htmx-request.loading-spinner {
+    display: inline-block;
+}
+
+.table-actions {
+    min-width: 120px;
+}
+
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+.status-active {
+    color: #28a745;
+}
+
+.status-inactive {
+    color: #6c757d;
+}
+
+.navbar-brand {
+    font-weight: 600;
+}
+
+footer {
+    margin-top: auto;
+}
+
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.container {
+    flex: 1;
+}
+
+/* Form enhancements */
+.form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+.btn-primary {
+    background-color: #667eea;
+    border-color: #667eea;
+}
+
+.btn-primary:hover {
+    background-color: #5a67d8;
+    border-color: #5a67d8;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .wallet-address {
+        font-size: 0.8em;
+    }
+    
+    .table-responsive {
+        font-size: 0.9em;
+    }
+}
+
+/* Custom alerts */
+.alert-wallet {
+    background-color: #f8f9fa;
+    border-color: #667eea;
+    color: #495057;
+}
+
+/* Pagination */
+.pagination {
+    justify-content: center;
+}
+
+/* Search highlights */
+.search-highlight {
+    background-color: yellow;
+    padding: 0.1rem 0.2rem;
+    border-radius: 0.2rem;
+}

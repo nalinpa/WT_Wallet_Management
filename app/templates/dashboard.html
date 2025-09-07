@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Wallet Manager{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">Wallet Dashboard</h1>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mb-4">
+    <div class="col-12">
+        <h3>Quick Actions</h3>
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="/wallets-add" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Add New Wallet
+            </a>
+            <a href="/wallets-view" class="btn btn-outline-primary">
+                <i class="bi bi-list"></i> View All Wallets
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Wallets -->
+<div class="row">
+    <div class="col-12">
+        <h3>Recent Wallets</h3>
+        <div class="card">
+            <div class="card-body">
+                <div id="recent-wallets" hx-get="/wallets?limit=5&sort_by=created_at&sort_order=-1" hx-trigger="load">
+                    <div class="text-center">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Loading recent wallets...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Wallet Search -->
+<div class="row mt-4">
+    <div class="col-12">
+        <h3>Quick Search</h3>
+        <div class="card">
+            <div class="card-body">
+                <form hx-get="/wallets/search/by-address" hx-target="#search-result">
+                    <div class="input-group">
+                        <input type="text" class="form-control" name="address" placeholder="Enter wallet address (0x...)" pattern="0x[a-fA-F0-9]{40}">
+                        <button class="btn btn-outline-secondary" type="submit">
+                            <i class="bi bi-search"></i> Search
+                        </button>
+                    </div>
+                </form>
+                <div id="search-result" class="mt-3"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function refreshStats() {
+    htmx.trigger('#stats-container', 'load');
+}
+
+// Auto-refresh stats every 30 seconds
+setInterval(refreshStats, 30000);
+</script>
+
+{% endblock %}

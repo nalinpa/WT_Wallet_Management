@@ -5,15 +5,23 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Settings:
-    # MongoDB Configuration
-    MONGODB_URL: str = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
-    DATABASE_NAME: str = os.getenv("DATABASE_NAME", "wallet_db")
-    COLLECTION_NAME: str = os.getenv("COLLECTION_NAME", "wallets")
+     # BigQuery Configuration
+    GOOGLE_CLOUD_PROJECT: str = os.getenv("GOOGLE_CLOUD_PROJECT", "")
+    BIGQUERY_DATASET: str = os.getenv("BIGQUERY_DATASET", "crypto_tracker")
+    BIGQUERY_TABLE: str = os.getenv("BIGQUERY_TABLE", "smart_wallets")
+    GOOGLE_APPLICATION_CREDENTIALS: str = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "")
     
+    # Full table reference
+    @property
+    def FULL_TABLE_ID(self) -> str:
+        return f"{self.GOOGLE_CLOUD_PROJECT}.{self.BIGQUERY_DATASET}.{self.BIGQUERY_TABLE}"
+    
+
     # API Configuration
     API_HOST: str = os.getenv("API_HOST", "0.0.0.0")
     API_PORT: int = int(os.getenv("API_PORT", "8000"))
     DEBUG: bool = os.getenv("DEBUG", "False").lower() == "true"
+    ADMIN_PASSWORD: str = os.getenv("ADMIN_PASSWORD", "Password!!")
     
     # CORS Configuration
     ALLOWED_ORIGINS: list = os.getenv("ALLOWED_ORIGINS", "*").split(",")

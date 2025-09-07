@@ -1,162 +1,139 @@
-# Wallet API Deployment Script for Google Cloud (PowerShell)
-# Make sure you have gcloud CLI installed and authenticated
-
+# Final deployment script with correct dataset/table names and aggressive cache busting
 param(
-    [string]$ProjectId = $env:PROJECT_ID,
+    [string]$ProjectId = "crypto-tracker-cloudrun",
     [string]$Region = "asia-southeast1",
-    [string]$ServiceName = "wallet-api"
+    [string]$Dataset = "crypto_analysis", 
+    [string]$Table = "smart_wallets"
 )
 
-# Configuration
-if (-not $ProjectId) {
-    $ProjectId = Read-Host "Enter your Google Cloud Project ID"
-}
+Write-Host "🚀 Final deployment with aggressive cache clearing..." -ForegroundColor Green
+Write-Host "Project: $ProjectId" -ForegroundColor Cyan
+Write-Host "Dataset: $Dataset" -ForegroundColor Cyan
+Write-Host "Table: $Table" -ForegroundColor Cyan
 
-$ImageName = "gcr.io/$ProjectId/$ServiceName"
+# 1. Aggressive Docker cleanup
+Write-Host "🧹 Performing aggressive Docker cleanup..." -ForegroundColor Yellow
+docker system prune -a --volumes -f 2>$null
+docker builder prune -a -f 2>$null
 
-Write-Host "🚀 Starting deployment of Wallet API to Google Cloud..." -ForegroundColor Green
-Write-Host "Project ID: $ProjectId" -ForegroundColor Cyan
-Write-Host "Region: $Region" -ForegroundColor Cyan
-Write-Host "Service: $ServiceName" -ForegroundColor Cyan
-
-# Check if gcloud is installed
-try {
-    $null = Get-Command gcloud -ErrorAction Stop
-    Write-Host "✅ gcloud CLI found" -ForegroundColor Green
-} catch {
-    Write-Host "❌ gcloud CLI is not installed. Please install it first." -ForegroundColor Red
-    Write-Host "Visit: https://cloud.google.com/sdk/docs/install" -ForegroundColor Yellow
-    Read-Host "Press Enter to exit"
-    exit 1
-}
-
-# Check if user is authenticated
-$authCheck = gcloud auth list --filter=status:ACTIVE --format="value(account)" 2>$null
-if (-not $authCheck) {
-    Write-Host "❌ Not authenticated with gcloud. Please run 'gcloud auth login'" -ForegroundColor Red
-    Read-Host "Press Enter to exit"
-    exit 1
-}
-
-# Set project
-Write-Host "📋 Setting project..." -ForegroundColor Yellow
-gcloud config set project $ProjectId
-
-# Enable required APIs
-Write-Host "🔧 Enabling required APIs..." -ForegroundColor Yellow
-gcloud services enable cloudbuild.googleapis.com run.googleapis.com containerregistry.googleapis.com secretmanager.googleapis.com
-
-# Create secret for MongoDB URL (if it doesn't exist)
-Write-Host "🔐 Setting up secrets..." -ForegroundColor Yellow
-$secretExists = gcloud secrets describe wallet-api-secrets 2>$null
-if (-not $secretExists) {
-    Write-Host "Creating new secret for MongoDB URL..." -ForegroundColor Yellow
-    $MongoUrl = Read-Host "Please enter your MongoDB connection string" -AsSecureString
-    $PlainMongoUrl = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($MongoUrl))
-    $PlainMongoUrl | gcloud secrets create wallet-api-secrets --data-file=-
-    Write-Host "✅ Secret created successfully" -ForegroundColor Green
-} else {
-    Write-Host "✅ Secret already exists" -ForegroundColor Green
-}
-
-# Function definitions
-function Deploy-WithCloudBuild {
-    Write-Host "🏗️  Building and deploying with Cloud Build..." -ForegroundColor Yellow
-    gcloud builds submit --config cloudbuild.yaml --substitutions "_REGION=$Region" .
-    Write-Host "✅ Deployment completed with Cloud Build!" -ForegroundColor Green
-}
-
-function Deploy-WithLocalBuild {
-    Write-Host "🐳 Building Docker image locally..." -ForegroundColor Yellow
+# 2. Verify requirements.txt content
+Write-Host "📋 Verifying requirements.txt..." -ForegroundColor Yellow
+if (Test-Path "requirements.txt") {
+    $reqContent = Get-Content "requirements.txt" -Raw
+    Write-Host "Current requirements.txt content:" -ForegroundColor Cyan
+    Write-Host $reqContent
     
-    # Build and push image
-    docker build -t "${ImageName}:latest" .
-    docker push "${ImageName}:latest"
-    
-    # Deploy to Cloud Run
-    Write-Host "☁️  Deploying to Cloud Run..." -ForegroundColor Yellow
-    gcloud run deploy $ServiceName `
-        --image "${ImageName}:latest" `
-        --region $Region `
-        --platform managed `
-        --allow-unauthenticated `
-        --port 8080 `
-        --memory 2Gi `
-        --cpu 2 `
-        --min-instances 1 `
-        --max-instances 10 `
-        --set-env-vars "DATABASE_NAME=wallet_db,COLLECTION_NAME=wallets,API_HOST=0.0.0.0,API_PORT=8080,DEBUG=False,ALLOWED_ORIGINS=*" `
-        --update-secrets "MONGODB_URL=wallet-api-secrets:MONGODB_URL:latest"
-    
-    Write-Host "✅ Deployment completed with local build!" -ForegroundColor Green
-}
-
-function Deploy-ToAppEngine {
-    Write-Host "🚀 Deploying to App Engine..." -ForegroundColor Yellow
-    
-    # Get MongoDB URL from secret and update app.yaml
-    $MongoSecret = gcloud secrets versions access latest --secret="wallet-api-secrets"
-    
-    # Create temporary app.yaml with MongoDB URL
-    (Get-Content app.yaml) -replace 'MONGODB_URL: ""', "MONGODB_URL: `"$MongoSecret`"" | Set-Content app-temp.yaml
-    
-    # Deploy
-    gcloud app deploy app-temp.yaml --quiet
-    
-    # Cleanup
-    Remove-Item app-temp.yaml
-    
-    Write-Host "✅ Deployment to App Engine completed!" -ForegroundColor Green
-    return $true
-}
-
-# Choose deployment method
-Write-Host ""
-Write-Host "Choose deployment method:" -ForegroundColor Cyan
-Write-Host "1) Cloud Build + Cloud Run (Recommended)" -ForegroundColor White
-Write-Host "2) Local Build + Cloud Run" -ForegroundColor White  
-Write-Host "3) App Engine" -ForegroundColor White
-
-$choice = Read-Host "Enter choice (1-3)"
-$isAppEngine = $false
-
-switch ($choice) {
-    "1" { 
-        Deploy-WithCloudBuild 
-    }
-    "2" { 
-        Deploy-WithLocalBuild 
-    }
-    "3" { 
-        $isAppEngine = Deploy-ToAppEngine
-    }
-    default {
-        Write-Host "❌ Invalid choice" -ForegroundColor Red
+    if ($reqContent -like "*motor*" -or $reqContent -like "*pymongo*") {
+        Write-Host "❌ FOUND MongoDB dependencies in requirements.txt!" -ForegroundColor Red
+        Write-Host "Please remove 'motor' and 'pymongo' lines from requirements.txt" -ForegroundColor Red
         exit 1
+    } else {
+        Write-Host "✅ No MongoDB dependencies found" -ForegroundColor Green
+    }
+} else {
+    Write-Host "❌ requirements.txt not found!" -ForegroundColor Red
+    exit 1
+}
+
+# 3. Create correct BigQuery table if needed
+Write-Host "🗄️  Ensuring BigQuery table exists..." -ForegroundColor Yellow
+$tableExists = bq show --table --project_id=$ProjectId $Dataset.$Table 2>$null
+if (-not $tableExists) {
+    Write-Host "Creating BigQuery table with correct schema..." -ForegroundColor Yellow
+    # Use correct bq command-line schema format (no :REQUIRED suffix)
+    $schema = "id:STRING,address:STRING,score:INTEGER,is_active:BOOLEAN,created_at:TIMESTAMP,last_updated:TIMESTAMP"
+    bq mk --table --schema=$schema $ProjectId`:$Dataset.$Table
+    Write-Host "✅ Table created: $Dataset.$Table" -ForegroundColor Green
+} else {
+    Write-Host "✅ Table already exists: $Dataset.$Table" -ForegroundColor Green
+}
+
+# 4. Create fresh build directory
+Write-Host "📁 Creating fresh build context..." -ForegroundColor Yellow
+$buildDir = "build_$(Get-Date -Format 'yyyyMMdd_HHmmss')"
+New-Item -ItemType Directory -Path $buildDir -Force | Out-Null
+
+# Copy files to fresh directory
+$filesToCopy = @("app", "requirements.txt", "Dockerfile", ".dockerignore")
+foreach ($item in $filesToCopy) {
+    if (Test-Path $item) {
+        Copy-Item -Path $item -Destination $buildDir -Recurse -Force
+        Write-Host "Copied: $item" -ForegroundColor Gray
     }
 }
 
-# Get service URL and display results
-Write-Host ""
-if ($isAppEngine) {
-    $AppUrl = gcloud app describe --format="value(defaultHostname)"
-    Write-Host "🎉 Deployment successful!" -ForegroundColor Green
-    Write-Host "App URL: https://$AppUrl" -ForegroundColor Cyan
-    Write-Host "API Docs: https://$AppUrl/docs" -ForegroundColor Cyan
-    Write-Host "Health Check: https://$AppUrl/health" -ForegroundColor Cyan
+# 5. Add cache busting timestamp to requirements.txt in build directory
+$timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+$buildReqPath = Join-Path $buildDir "requirements.txt"
+$reqContent = Get-Content $buildReqPath -Raw
+"# Cache bust: $timestamp`n$reqContent" | Set-Content $buildReqPath
+
+# 6. Build with unique tag from fresh directory
+Set-Location $buildDir
+$uniqueTag = "gcr.io/$ProjectId/wallet-api-bigquery:final-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
+
+Write-Host "🐳 Building with completely fresh context..." -ForegroundColor Yellow
+Write-Host "Tag: $uniqueTag" -ForegroundColor Gray
+
+docker build --no-cache --pull -t $uniqueTag .
+
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "✅ Build successful!" -ForegroundColor Green
+    
+    # Push image
+    Write-Host "📤 Pushing image..." -ForegroundColor Yellow
+    docker push $uniqueTag
+    
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "✅ Push successful!" -ForegroundColor Green
+        
+        # Deploy to Cloud Run
+        Write-Host "☁️  Deploying to Cloud Run..." -ForegroundColor Yellow
+        Set-Location ..
+        
+        gcloud run deploy wallet-api-bigquery `
+            --image $uniqueTag `
+            --region $Region `
+            --platform managed `
+            --allow-unauthenticated `
+            --port 8080 `
+            --memory 2Gi `
+            --cpu 2 `
+            --timeout 600 `
+            --service-account wallet-api-service@$ProjectId.iam.gserviceaccount.com `
+            --set-env-vars "GOOGLE_CLOUD_PROJECT=$ProjectId,BIGQUERY_DATASET=$Dataset,BIGQUERY_TABLE=$Table,API_HOST=0.0.0.0,API_PORT=8080,DEBUG=False,ALLOWED_ORIGINS=*"
+        
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "🎉 Deployment successful!" -ForegroundColor Green
+            $serviceUrl = gcloud run services describe wallet-api-bigquery --region=$Region --format="value(status.url)"
+            Write-Host "Service URL: $serviceUrl" -ForegroundColor Cyan
+            Write-Host "Health check: $serviceUrl/health" -ForegroundColor Cyan
+            Write-Host "API docs: $serviceUrl/docs" -ForegroundColor Cyan
+            
+            # Test the health endpoint
+            Write-Host "🔍 Testing health endpoint..." -ForegroundColor Yellow
+            try {
+                $response = Invoke-RestMethod -Uri "$serviceUrl/health" -TimeoutSec 10
+                Write-Host "✅ Health check passed: $($response | ConvertTo-Json)" -ForegroundColor Green
+            } catch {
+                Write-Host "⚠️  Health check failed: $($_.Exception.Message)" -ForegroundColor Yellow
+                Write-Host "Check logs: gcloud logs read --service=wallet-api-bigquery --limit=50" -ForegroundColor Gray
+            }
+        } else {
+            Write-Host "❌ Cloud Run deployment failed" -ForegroundColor Red
+        }
+    } else {
+        Write-Host "❌ Image push failed" -ForegroundColor Red
+    }
 } else {
-    $ServiceUrl = gcloud run services describe $ServiceName --region=$Region --format="value(status.url)"
-    Write-Host "🎉 Deployment successful!" -ForegroundColor Green
-    Write-Host "Service URL: $ServiceUrl" -ForegroundColor Cyan
-    Write-Host "API Docs: $ServiceUrl/docs" -ForegroundColor Cyan
-    Write-Host "Health Check: $ServiceUrl/health" -ForegroundColor Cyan
+    Write-Host "❌ Docker build failed" -ForegroundColor Red
 }
 
-Write-Host ""
-Write-Host "📋 Next steps:" -ForegroundColor Yellow
-Write-Host "1. Test your API endpoints" -ForegroundColor White
-Write-Host "2. Set up monitoring in Cloud Console" -ForegroundColor White
-Write-Host "3. Configure custom domain (optional)" -ForegroundColor White
-Write-Host "4. Set up CI/CD with Cloud Build triggers (optional)" -ForegroundColor White
+# Cleanup
+Set-Location ..
+Remove-Item -Path $buildDir -Recurse -Force -ErrorAction SilentlyContinue
 
-Read-Host "Press Enter to exit"
+Write-Host "`n📊 Deployment Summary:" -ForegroundColor Cyan
+Write-Host "Dataset: $Dataset" -ForegroundColor White
+Write-Host "Table: $Table" -ForegroundColor White
+Write-Host "Image: $uniqueTag" -ForegroundColor White

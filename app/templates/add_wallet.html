@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}Add Wallet - Wallet Manager{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">Add New Wallet</h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <form hx-post="/wallets" hx-target="#form-result" hx-swap="innerHTML">
+                    <div class="mb-3">
+                        <label for="address" class="form-label">Wallet Address *</label>
+                        <input type="text" class="form-control" id="address" name="address" 
+                               pattern="0x[a-fA-F0-9]{40}" 
+                               placeholder="0x1234567890123456789012345678901234567890"
+                               title="Must be a valid Ethereum address (0x followed by 40 hex characters)"
+                               required>
+                        <div class="form-text">Enter a valid Ethereum wallet address starting with 0x</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="score" class="form-label">Score *</label>
+                        <input type="number" class="form-control" id="score" name="score" 
+                               min="0" max="10" value="5" required>
+                        <div class="form-text">Score between 0 and 10</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="is_active" name="is_active" checked>
+                            <label class="form-check-label" for="is_active">
+                                Active
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> Add Wallet
+                        </button>
+                        <a href="/wallets/view" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+                
+                <div id="form-result" class="mt-3"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Quick Tips</h5>
+                <ul class="list-unstyled">
+                    <li><i class="bi bi-info-circle text-primary"></i> Wallet addresses must be valid Ethereum addresses</li>
+                    <li><i class="bi bi-info-circle text-primary"></i> Score range is 0-10, where 10 is the highest</li>
+                    <li><i class="bi bi-info-circle text-primary"></i> Inactive wallets are hidden from some views</li>
+                    <li><i class="bi bi-info-circle text-primary"></i> Duplicate addresses are not allowed</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Form validation
+document.getElementById('address').addEventListener('input', function(e) {
+    const address = e.target.value;
+    const isValid = /^0x[a-fA-F0-9]{40}$/.test(address);
+    
+    if (address.length > 0 && !isValid) {
+        e.target.setCustomValidity('Invalid Ethereum address format');
+    } else {
+        e.target.setCustomValidity('');
+    }
+});
+
+// Handle successful form submission
+document.body.addEventListener('htmx:afterRequest', function(event) {
+    if (event.detail.xhr.status === 201) {
+        // Success - redirect to wallets list
+        window.location.href = '/wallets/view';
+    }
+});
+</script>
+
+{% endblock %}

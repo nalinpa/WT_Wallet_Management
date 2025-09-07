@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}Login - Wallet Manager{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-4">
+        <div class="card shadow">
+            <div class="card-body p-4">
+                <h2 class="text-center mb-4">Wallet Manager</h2>
+                <form method="post" action="/authenticate">
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password:</label>
+                        <input type="password" name="password" class="form-control" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Login</button>
+                </form>
+                {% if error %}
+                <div class="alert alert-danger mt-3">Invalid password</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

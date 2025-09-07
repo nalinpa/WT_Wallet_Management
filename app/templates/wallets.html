@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}All Wallets - Wallet Manager{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">All Wallets</h1>
+    </div>
+</div>
+
+<!-- Filters and Search -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Filters</h5>
+                <form id="filter-form" hx-get="/wallets" hx-target="#wallets-list" hx-trigger="change, submit">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <label class="form-label">Active Only</label>
+                            <select name="active_only" class="form-select">
+                                <option value="false">All Wallets</option>
+                                <option value="true">Active Only</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Min Score</label>
+                            <input type="number" name="min_score" class="form-control" min="0" max="10" value="0">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Max Score</label>
+                            <input type="number" name="max_score" class="form-control" min="0" max="10" value="10">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Sort By</label>
+                            <select name="sort_by" class="form-select">
+                                <option value="created_at">Created Date</option>
+                                <option value="score">Score</option>
+                                <option value="address">Address</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Order</label>
+                            <select name="sort_order" class="form-select">
+                                <option value="-1">Descending</option>
+                                <option value="1">Ascending</option>
+                            </select>
+                        </div>
+                        <div class="col-md-1 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary">Filter</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Wallets List -->
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3>Wallets</h3>
+            <a href="/wallets/add" class="btn btn-success">
+                <i class="bi bi-plus-circle"></i> Add New Wallet
+            </a>
+        </div>
+        
+        <div id="wallets-list" hx-get="/wallets" hx-trigger="load">
+            <div class="text-center">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Loading wallets...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Pagination will be added here -->
+<div class="row mt-4">
+    <div class="col-12" id="pagination-controls">
+        <!-- Pagination controls will be loaded here -->
+    </div>
+</div>
+
+{% endblock %}

@@ -3,16 +3,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from .config import settings
-from .database import connect_to_mongo, close_mongo_connection
+from .database import connect_to_bigquery, close_bigquery_connection
 from .router import wallets_router
-
+from .router import frontend_router
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    await connect_to_mongo()
+    await connect_to_bigquery()
     yield
     # Shutdown
-    await close_mongo_connection()
+    await close_bigquery_connection()
 
 app = FastAPI(
     title=settings.API_TITLE,
@@ -32,18 +32,21 @@ app.add_middleware(
 
 # Include routers
 app.include_router(wallets_router)
+app.include_router(frontend_router)
 
 @app.get("/")
 async def root():
     """Root endpoint with API information"""
     return {
-        "message": f"{settings.API_TITLE} with MongoDB",
+        "message": f"{settings.API_TITLE} with BigQuery",
         "version": settings.API_VERSION,
-        "database": settings.DATABASE_NAME,
-        "collection": settings.COLLECTION_NAME,
+        "project": settings.GOOGLE_CLOUD_PROJECT,
+        "dataset": settings.BIGQUERY_DATASET,
+        "table": settings.BIGQUERY_TABLE,
+        "full_table_id": settings.FULL_TABLE_ID,
         "endpoints": {
             "GET /wallets": "Get all wallets",
-            "GET /wallets/{wallet_id}": "Get wallet by ID", 
+            "GET /wallets/{wallet_id}": "Get wallet by ID",
             "POST /wallets": "Create new wallet",
             "PUT /wallets/{wallet_id}": "Update wallet",
             "DELETE /wallets/{wallet_id}": "Delete wallet",
@@ -55,7 +58,7 @@ async def root():
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
-    return {"status": "healthy"}
+    return {"status": "healthy", "database": "BigQuery"}
 
 if __name__ == "__main__":
     import uvicorn
